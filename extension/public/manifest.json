@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "ListenPresence - YouTube Music Rich Presence",
+  "version": "0.1.0",
+  "description": "Shows the current YouTube Music track as Discord Rich Presence through a local connector.",
+  "permissions": ["storage", "nativeMessaging"],
+  "content_scripts": [
+    {
+      "matches": ["https://music.youtube.com/*"],
+      "js": ["content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_title": "ListenPresence",
+    "default_popup": "popup/popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "minimum_chrome_version": "102"
+}

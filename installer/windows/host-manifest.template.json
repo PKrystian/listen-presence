@@ -1,0 +1,7 @@
+{
+  "name": "com.listenpresence.connector",
+  "description": "ListenPresence local Discord Rich Presence connector",
+  "path": "C:\\Users\\<user>\\AppData\\Local\\ListenPresence\\listenpresence-connector.exe",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://<extension-id>/"]
+}

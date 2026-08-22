@@ -1,0 +1,56 @@
+{
+  "name": "listen-presence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "YouTube Music Rich Presence for Discord through a local Native Messaging connector.",
+  "license": "MIT",
+  "author": "Krystian Pińczak",
+  "homepage": "https://github.com/PKrystian/listen-presence",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PKrystian/listen-presence.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PKrystian/listen-presence/issues"
+  },
+  "keywords": [
+    "discord",
+    "rich-presence",
+    "youtube-music",
+    "chrome-extension",
+    "native-messaging"
+  ],
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build:extension",
+    "build:extension": "node scripts/build-extension.mjs",
+    "build:native": "go -C native-host build -buildvcs=false -trimpath -ldflags=\"-s -w\" -o ../dist/native-host/listenpresence-connector.exe ./cmd/listenpresence-connector",
+    "build:all": "npm run build:extension && npm run build:native",
+    "build:installer": "node scripts/build-installer.mjs",
+    "build:release": "npm run build:all && npm run build:installer",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "native:test": "go -C native-host test ./...",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build:extension"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.9",
+    "@types/node": "^22.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.32.0",
+    "@typescript-eslint/parser": "^8.32.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.25.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}

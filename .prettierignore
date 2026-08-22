@@ -1,0 +1,6 @@
+dist/
+coverage/
+node_modules/
+native-host/bin/
+package-lock.json
+

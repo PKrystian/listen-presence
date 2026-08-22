@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+test-results/
+.cache/
+.idea/
+*.log
+
+native-host/bin/
+native-host/*.exe
+
+installer/windows/generated/
+installer/windows/cmd/listenpresence-installer/connector_asset_release.go

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ListenPresence</title>
+  </head>
+  <body>
+    <main class="popup" aria-labelledby="title">
+      <header class="header">
+        <div>
+          <p class="eyebrow">ListenPresence</p>
+          <h1 id="title">YouTube Music Rich Presence</h1>
+        </div>
+        <span id="sharing-badge" class="badge" aria-live="polite">Loading</span>
+      </header>
+
+      <section class="card" aria-labelledby="sharing-heading">
+        <div class="row">
+          <div>
+            <h2 id="sharing-heading">Sharing</h2>
+            <p>Show the currently playing track in Discord.</p>
+          </div>
+          <label class="switch">
+            <span class="sr-only">Enable Rich Presence sharing</span>
+            <input id="sharing-toggle" type="checkbox" />
+            <span class="switch-track" aria-hidden="true"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="status-heading">
+        <div class="card-heading">
+          <h2 id="status-heading">Status</h2>
+          <button id="refresh" class="button button-ghost" type="button">Refresh</button>
+        </div>
+        <dl class="status-list">
+          <div>
+            <dt>Connector</dt>
+            <dd id="connector-status">Unknown</dd>
+          </div>
+          <div>
+            <dt>Discord Desktop</dt>
+            <dd id="discord-status">Unknown</dd>
+          </div>
+        </dl>
+        <p id="status-error" class="error" role="alert" hidden></p>
+        <button id="install" class="button button-primary" type="button">
+          Download connector installer
+        </button>
+        <p>Install the Windows connector once. It starts automatically afterward.</p>
+      </section>
+
+      <section class="privacy" aria-labelledby="privacy-heading">
+        <h2 id="privacy-heading">Privacy</h2>
+        <p>ListenPresence reads playback metadata only on music.youtube.com.</p>
+        <p>
+          There is no backend, telemetry, Discord login, user token, cookie, history, or password
+          access.
+        </p>
+        <p>
+          A local connector is required. It starts automatically through Native Messaging when
+          sharing is enabled.
+        </p>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

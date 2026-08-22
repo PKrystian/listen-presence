@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible ListenPresence problem
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not include passwords, cookies, Discord tokens, private URLs, or track history.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 000 or Brave 000
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+    validations:
+      required: true
+  - type: input
+    id: extension
+    attributes:
+      label: ListenPresence version
+    validations:
+      required: true
+  - type: dropdown
+    id: connector
+    attributes:
+      label: Connector status
+      options:
+        - Available
+        - Missing
+        - Error
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include expected and actual results.
+    validations:
+      required: true

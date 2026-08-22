@@ -1,0 +1,8 @@
+name: Security report
+description: Report a vulnerability privately
+title: ''
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: Do not disclose a vulnerability in a public issue. Use GitHub private vulnerability reporting or contact the maintainer privately as described in SECURITY.md.
