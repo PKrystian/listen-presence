@@ -33,7 +33,7 @@ describe('extractTrackSnapshot', () => {
     });
   });
 
-  it('uses the active media time when the player bar has stale text', () => {
+  it('uses the player-bar time when media timing belongs to another track', () => {
     document.body.innerHTML = `
       <ytmusic-player-bar>
         <div class="title">Suffer Me</div>
@@ -52,8 +52,80 @@ describe('extractTrackSnapshot', () => {
     });
 
     const snapshot = extractTrackSnapshot(document, 'https://music.youtube.com/watch?v=next123');
-    expect(snapshot?.position).toBe(214);
-    expect(snapshot?.duration).toBe(246);
+    expect(snapshot?.position).toBe(34);
+    expect(snapshot?.duration).toBe(164);
+  });
+
+  it('uses active media time when player-bar text is stale at the end', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar>
+        <div class="title">The Town Inside Me</div>
+        <div class="left-controls">
+          <span class="time-info ytmusic-player-bar">4:18 / 4:18</span>
+        </div>
+      </ytmusic-player-bar>
+      <video></video>
+    `;
+    const video = document.querySelector('video') as HTMLVideoElement;
+    Object.defineProperties(video, {
+      currentTime: { value: 107 },
+      duration: { value: 258 },
+      paused: { value: false },
+      ended: { value: false },
+    });
+
+    const snapshot = extractTrackSnapshot(document, 'https://music.youtube.com/watch?v=current123');
+    expect(snapshot?.position).toBe(107);
+    expect(snapshot?.duration).toBe(258);
+  });
+
+  it('uses current player-bar time after an autoplay track change', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar>
+        <div class="title">Dynasties and Dystopia</div>
+        <div class="left-controls">
+          <span class="time-info ytmusic-player-bar">0:37 / 2:59</span>
+        </div>
+      </ytmusic-player-bar>
+      <video></video>
+    `;
+    const video = document.querySelector('video') as HTMLVideoElement;
+    Object.defineProperties(video, {
+      currentTime: { value: 709 },
+      duration: { value: 752 },
+      paused: { value: false },
+      ended: { value: false },
+    });
+
+    const snapshot = extractTrackSnapshot(
+      document,
+      'https://music.youtube.com/watch?v=autonext123',
+    );
+    expect(snapshot?.position).toBe(37);
+    expect(snapshot?.duration).toBe(179);
+  });
+
+  it('prefers current player-bar time when both sources have the same duration', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar>
+        <div class="title">Bones</div>
+        <div class="left-controls">
+          <span class="time-info ytmusic-player-bar">0:53 / 2:46</span>
+        </div>
+      </ytmusic-player-bar>
+      <video></video>
+    `;
+    const video = document.querySelector('video') as HTMLVideoElement;
+    Object.defineProperties(video, {
+      currentTime: { value: 39 },
+      duration: { value: 166 },
+      paused: { value: false },
+      ended: { value: false },
+    });
+
+    const snapshot = extractTrackSnapshot(document, 'https://music.youtube.com/watch?v=bones123');
+    expect(snapshot?.position).toBe(53);
+    expect(snapshot?.duration).toBe(166);
   });
 
   it('falls back to the player-bar time while media timing is unavailable', () => {

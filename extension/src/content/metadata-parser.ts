@@ -20,6 +20,9 @@ type PlaybackTime = {
   duration: number;
 };
 
+const playbackDurationMismatchSeconds = 2;
+const playbackEndToleranceSeconds = 2;
+
 const text = (root: ParentNode, selectors: string[]): string => {
   for (const selector of selectors) {
     const value = root.querySelector(selector)?.textContent;
@@ -106,7 +109,8 @@ const getMediaPlayback = (media: MediaElementLike | undefined): PlaybackTime | u
     !Number.isFinite(media.currentTime) ||
     media.currentTime < 0 ||
     !Number.isFinite(media.duration) ||
-    media.duration <= 0
+    media.duration <= 0 ||
+    media.currentTime > media.duration + playbackDurationMismatchSeconds
   ) {
     return undefined;
   }
@@ -114,6 +118,33 @@ const getMediaPlayback = (media: MediaElementLike | undefined): PlaybackTime | u
     position: media.currentTime,
     duration: media.duration,
   };
+};
+
+const choosePlayback = (
+  mediaPlayback: PlaybackTime | undefined,
+  displayedPlayback: PlaybackTime | undefined,
+): PlaybackTime | undefined => {
+  if (!mediaPlayback) {
+    return displayedPlayback;
+  }
+  if (!displayedPlayback) {
+    return mediaPlayback;
+  }
+
+  if (
+    Math.abs(mediaPlayback.duration - displayedPlayback.duration) < playbackDurationMismatchSeconds
+  ) {
+    const displayedRemaining = displayedPlayback.duration - displayedPlayback.position;
+    const mediaRemaining = mediaPlayback.duration - mediaPlayback.position;
+    if (
+      displayedRemaining <= playbackEndToleranceSeconds &&
+      mediaRemaining > playbackEndToleranceSeconds
+    ) {
+      return mediaPlayback;
+    }
+  }
+
+  return displayedPlayback;
 };
 
 const getTrackUrl = (document: Document, locationHref: string): string => {
@@ -225,7 +256,7 @@ export const extractTrackSnapshot = (
   const trackId = getTrackId(trackUrl, locationHref);
   const imageUrl = getStableThumbnailUrl(trackId) || getImageUrl(document, mediaSessionMetadata);
 
-  const playback = getMediaPlayback(media) ?? getDisplayedPlayback(document);
+  const playback = choosePlayback(getMediaPlayback(media), getDisplayedPlayback(document));
   const position = playback?.position ?? 0;
   const duration = playback?.duration ?? 0;
   const isPlaying = media ? !media.paused && !media.ended : playbackState === 'playing';
