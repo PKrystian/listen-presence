@@ -6,8 +6,8 @@ export const buildPresenceActivity = (
   now = Date.now(),
 ): PresenceActivity | null => {
   const title = trimText(snapshot.title);
-  const trackUrl = snapshot.trackUrl;
-  if (!snapshot.isPlaying || !title || !isYouTubeMusicUrl(trackUrl)) {
+  const trackUrl = isYouTubeMusicUrl(snapshot.trackUrl) ? snapshot.trackUrl : '';
+  if (!snapshot.isPlaying || !title) {
     return null;
   }
 
@@ -38,12 +38,14 @@ export const buildPresenceActivity = (
     };
   }
 
-  activity.buttons = [
-    {
-      label: 'Open in YouTube Music',
-      url: trackUrl,
-    },
-  ];
+  if (trackUrl) {
+    activity.buttons = [
+      {
+        label: 'Open in YouTube Music',
+        url: trackUrl,
+      },
+    ];
+  }
   return activity;
 };
 

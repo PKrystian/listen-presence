@@ -47,13 +47,25 @@ if ($DiscordApplicationId) {
   [System.IO.File]::WriteAllText((Join-Path $resolvedRoot 'config.json'), $configJson, [System.Text.UTF8Encoding]::new($false))
 }
 
-$registryBase = switch ($Browser) {
-  'Chrome' { 'HKCU:\Software\Google\Chrome\NativeMessagingHosts' }
-  'Brave' { 'HKCU:\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts' }
-  'Chromium' { 'HKCU:\Software\Chromium\NativeMessagingHosts' }
+$registryBases = switch ($Browser) {
+  'Chrome' { @('HKCU:\Software\Google\Chrome\NativeMessagingHosts') }
+  'Brave' {
+    @(
+      'HKCU:\Software\Google\Chrome\NativeMessagingHosts',
+      'HKCU:\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts'
+    )
+  }
+  'Chromium' { @('HKCU:\Software\Chromium\NativeMessagingHosts') }
 }
-$registryKey = Join-Path $registryBase 'com.listenpresence.connector'
-New-Item -Path $registryKey -Force | Out-Null
-New-ItemProperty -Path $registryKey -Name '(default)' -Value $manifestPath -PropertyType String -Force | Out-Null
+
+foreach ($registryBase in $registryBases) {
+  $registryKey = Join-Path $registryBase 'com.listenpresence.connector'
+  New-Item -Path $registryKey -Force | Out-Null
+  Set-ItemProperty -LiteralPath $registryKey -Name '(default)' -Value $manifestPath -Force
+  $registeredManifestPath = (Get-Item -LiteralPath $registryKey).GetValue('')
+  if ($registeredManifestPath -ne $manifestPath) {
+    throw "Native Messaging registration could not be verified for $Browser."
+  }
+}
 
 Write-Output "Registered ListenPresence for $Browser."

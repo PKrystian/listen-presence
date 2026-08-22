@@ -69,6 +69,7 @@ export type PopupStatus = {
   sharingEnabled: boolean;
   connector: 'unknown' | 'available' | 'missing' | 'error';
   discord: 'unknown' | 'connected' | 'disconnected';
+  activity: 'unknown' | 'set' | 'clear';
   lastError?: string;
 };
 

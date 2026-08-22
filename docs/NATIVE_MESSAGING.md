@@ -62,7 +62,9 @@ stable code and a short message. Track data is not written to stderr.
 
 ## Host registration
 
-On Windows, Chrome and Brave read the manifest path from the current user's registry hive:
+On Windows, Chrome reads the manifest path from the current user's registry hive. Brave's
+Windows build uses the Chromium default lookup, so ListenPresence registers the Chrome
+compatible key for Brave as well as Brave's own compatibility key:
 
 ```text
 HKCU\Software\Google\Chrome\NativeMessagingHosts\com.listenpresence.connector

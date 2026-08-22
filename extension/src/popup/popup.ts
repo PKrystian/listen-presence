@@ -5,6 +5,7 @@ const toggle = document.querySelector<HTMLInputElement>('#sharing-toggle');
 const badge = document.querySelector<HTMLElement>('#sharing-badge');
 const connectorStatus = document.querySelector<HTMLElement>('#connector-status');
 const discordStatus = document.querySelector<HTMLElement>('#discord-status');
+const activityStatus = document.querySelector<HTMLElement>('#activity-status');
 const statusError = document.querySelector<HTMLElement>('#status-error');
 const installButton = document.querySelector<HTMLButtonElement>('#install');
 const refreshButton = document.querySelector<HTMLButtonElement>('#refresh');
@@ -12,7 +13,15 @@ const refreshButton = document.querySelector<HTMLButtonElement>('#refresh');
 const textStatus = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
 
 const render = (status: PopupStatus): void => {
-  if (!toggle || !badge || !connectorStatus || !discordStatus || !statusError || !installButton) {
+  if (
+    !toggle ||
+    !badge ||
+    !connectorStatus ||
+    !discordStatus ||
+    !activityStatus ||
+    !statusError ||
+    !installButton
+  ) {
     return;
   }
   toggle.checked = status.sharingEnabled;
@@ -20,6 +29,7 @@ const render = (status: PopupStatus): void => {
   badge.className = `badge ${status.sharingEnabled ? 'badge-on' : 'badge-off'}`;
   connectorStatus.textContent = textStatus(status.connector);
   discordStatus.textContent = textStatus(status.discord);
+  activityStatus.textContent = textStatus(status.activity);
   statusError.textContent = status.lastError ?? '';
   statusError.hidden = !status.lastError;
   installButton.hidden = status.connector === 'available';

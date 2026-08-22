@@ -20,14 +20,22 @@ $browsers = switch ($Browser) {
 }
 
 foreach ($target in $browsers) {
-  $registryBase = switch ($target) {
-    'Chrome' { 'HKCU:\Software\Google\Chrome\NativeMessagingHosts' }
-    'Brave' { 'HKCU:\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts' }
-    'Chromium' { 'HKCU:\Software\Chromium\NativeMessagingHosts' }
+  $registryBases = switch ($target) {
+    'Chrome' { @('HKCU:\Software\Google\Chrome\NativeMessagingHosts') }
+    'Brave' {
+      @(
+        'HKCU:\Software\Google\Chrome\NativeMessagingHosts',
+        'HKCU:\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts'
+      )
+    }
+    'Chromium' { @('HKCU:\Software\Chromium\NativeMessagingHosts') }
   }
-  $registryKey = Join-Path $registryBase 'com.listenpresence.connector'
-  if (Test-Path -LiteralPath $registryKey) {
-    Remove-Item -LiteralPath $registryKey -Recurse -Force
+
+  foreach ($registryBase in $registryBases) {
+    $registryKey = Join-Path $registryBase 'com.listenpresence.connector'
+    if (Test-Path -LiteralPath $registryKey) {
+      Remove-Item -LiteralPath $registryKey -Recurse -Force
+    }
   }
 }
 

@@ -136,24 +136,28 @@ func uninstall() error {
 }
 
 func registerHost(browser, manifestPath string) error {
-	registryKey, err := registryKey(browser)
+	registryKeys, err := registryKeys(browser)
 	if err != nil {
 		return err
 	}
-	if err = runRegistry("ADD", registryKey, "/ve", "/t", "REG_SZ", "/d", manifestPath, "/f"); err != nil {
-		return fmt.Errorf("could not register Native Messaging for %s: %w", browser, err)
+	for _, registryKey := range registryKeys {
+		if err = runRegistry("ADD", registryKey, "/ve", "/t", "REG_SZ", "/d", manifestPath, "/f"); err != nil {
+			return fmt.Errorf("could not register Native Messaging for %s: %w", browser, err)
+		}
 	}
 	return nil
 }
 
 func removeHost(browser string) error {
-	registryKey, err := registryKey(browser)
+	registryKeys, err := registryKeys(browser)
 	if err != nil {
 		return err
 	}
-	if err = runRegistry("DELETE", registryKey, "/f"); err != nil {
-		if queryErr := runRegistry("QUERY", registryKey); queryErr == nil {
-			return fmt.Errorf("could not remove Native Messaging registration for %s: %w", browser, err)
+	for _, registryKey := range registryKeys {
+		if err = runRegistry("DELETE", registryKey, "/f"); err != nil {
+			if queryErr := runRegistry("QUERY", registryKey); queryErr == nil {
+				return fmt.Errorf("could not remove Native Messaging registration for %s: %w", browser, err)
+			}
 		}
 	}
 	return nil
@@ -163,17 +167,18 @@ func runRegistry(arguments ...string) error {
 	return exec.Command("reg.exe", arguments...).Run()
 }
 
-func registryKey(browser string) (string, error) {
-	var root string
+func registryKeys(browser string) ([]string, error) {
 	switch browser {
 	case "Chrome":
-		root = `HKCU\Software\Google\Chrome\NativeMessagingHosts`
+		return []string{`HKCU\Software\Google\Chrome\NativeMessagingHosts\` + nativeHostName}, nil
 	case "Brave":
-		root = `HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts`
+		return []string{
+			`HKCU\Software\Google\Chrome\NativeMessagingHosts\` + nativeHostName,
+			`HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\` + nativeHostName,
+		}, nil
 	default:
-		return "", fmt.Errorf("unsupported browser: %s", browser)
+		return nil, fmt.Errorf("unsupported browser: %s", browser)
 	}
-	return root + "\\" + nativeHostName, nil
 }
 
 func localInstallRoot() (string, error) {

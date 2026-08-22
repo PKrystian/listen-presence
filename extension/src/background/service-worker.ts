@@ -17,6 +17,7 @@ const toPopupStatus = (sharingEnabled: boolean): PopupStatus => {
     sharingEnabled,
     connector: state.connector,
     discord: state.discord,
+    activity: state.activity,
   };
   if (state.lastError) {
     status.lastError = state.lastError;

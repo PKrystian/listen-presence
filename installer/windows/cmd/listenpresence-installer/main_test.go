@@ -21,3 +21,19 @@ func TestValidApplicationID(t *testing.T) {
 		t.Fatal("expected an invalid application ID")
 	}
 }
+
+func TestRegistryKeysForBrave(t *testing.T) {
+	keys, err := registryKeys("Brave")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 2 {
+		t.Fatalf("expected two Brave registry keys, got %d", len(keys))
+	}
+	if keys[0] != `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.listenpresence.connector` {
+		t.Fatalf("unexpected Chrome-compatible key: %s", keys[0])
+	}
+	if keys[1] != `HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.listenpresence.connector` {
+		t.Fatalf("unexpected Brave key: %s", keys[1])
+	}
+}

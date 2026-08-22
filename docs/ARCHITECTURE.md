@@ -58,6 +58,6 @@ clears the activity and exits.
 ## Installation boundary
 
 The Windows installer copies the executable to the current user's local application data
-directory and registers a browser-specific manifest in `HKCU`. The registry manifest
-contains the exact extension origin. No service, scheduled task, or Windows startup entry
-is created.
+directory and registers the manifest in `HKCU`. Brave receives both the Chromium-compatible
+Chrome registry key and a Brave-specific compatibility key. The registry manifest contains
+the exact extension origin. No service, scheduled task, or Windows startup entry is created.

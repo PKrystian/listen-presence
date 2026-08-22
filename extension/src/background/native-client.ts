@@ -17,6 +17,7 @@ type PendingRequest = {
 export type NativeConnectionState = {
   connector: 'unknown' | 'available' | 'missing' | 'error';
   discord: 'unknown' | 'connected' | 'disconnected';
+  activity: 'unknown' | 'set' | 'clear';
   lastError?: string;
 };
 
@@ -29,6 +30,7 @@ export class NativeClient {
   private state: NativeConnectionState = {
     connector: 'unknown',
     discord: 'unknown',
+    activity: 'unknown',
   };
   private retryAfter = 0;
 
@@ -41,6 +43,7 @@ export class NativeClient {
       this.state = {
         connector: 'error',
         discord: 'unknown',
+        activity: 'unknown',
         lastError: 'The extension rejected an invalid activity.',
       };
       return null;
@@ -108,6 +111,7 @@ export class NativeClient {
       this.state = {
         connector: 'available',
         discord: this.state.discord,
+        activity: this.state.activity,
       };
       return port;
     } catch (error) {
@@ -172,6 +176,7 @@ export class NativeClient {
       this.state = {
         connector: 'available',
         discord: status.discord,
+        activity: status.activity,
       };
       if (status.lastError) {
         this.state.lastError = status.lastError;
@@ -202,6 +207,7 @@ export class NativeClient {
           ? 'missing'
           : 'error',
       discord: 'disconnected',
+      activity: 'unknown',
       lastError: message,
     };
     this.retryAfter = Date.now() + 5000;

@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ListenPresence</title>
+    <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="popup" aria-labelledby="title">
@@ -43,25 +44,15 @@
             <dt>Discord Desktop</dt>
             <dd id="discord-status">Unknown</dd>
           </div>
+          <div>
+            <dt>Activity</dt>
+            <dd id="activity-status">Unknown</dd>
+          </div>
         </dl>
         <p id="status-error" class="error" role="alert" hidden></p>
         <button id="install" class="button button-primary" type="button">
           Download connector installer
         </button>
-        <p>Install the Windows connector once. It starts automatically afterward.</p>
-      </section>
-
-      <section class="privacy" aria-labelledby="privacy-heading">
-        <h2 id="privacy-heading">Privacy</h2>
-        <p>ListenPresence reads playback metadata only on music.youtube.com.</p>
-        <p>
-          There is no backend, telemetry, Discord login, user token, cookie, history, or password
-          access.
-        </p>
-        <p>
-          A local connector is required. It starts automatically through Native Messaging when
-          sharing is enabled.
-        </p>
       </section>
     </main>
     <script src="popup.js"></script>

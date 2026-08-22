@@ -42,6 +42,12 @@ describe('buildPresenceActivity', () => {
     expect(buildPresenceActivity({ ...snapshot, isPlaying: false })).toBeNull();
   });
 
+  it('keeps the activity when YouTube Music has not exposed a track URL', () => {
+    const activity = buildPresenceActivity({ ...snapshot, trackUrl: '' }, 1_700_000_000_000);
+    expect(activity?.details).toBe('Song title');
+    expect(activity?.buttons).toBeUndefined();
+  });
+
   it('deduplicates the same activity', () => {
     const activity = buildPresenceActivity(snapshot, 1_700_000_000_000);
     expect(presenceFingerprint(activity)).toBe(presenceFingerprint(activity));
