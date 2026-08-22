@@ -83,22 +83,58 @@ const parseTime = (value: string): number | undefined => {
   return hours * 3600 + minutes * 60 + seconds;
 };
 
+const isHidden = (element: Element): boolean => {
+  let current: Element | null = element;
+  while (current) {
+    if (current.hasAttribute('hidden') || current.getAttribute('aria-hidden') === 'true') {
+      return true;
+    }
+    const style = current.ownerDocument.defaultView?.getComputedStyle(current);
+    if (
+      style &&
+      (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
+    ) {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+};
+
+const parseDisplayedPlayback = (value: string): PlaybackTime | undefined => {
+  const parts = value.trim().split(/\s*\/\s*/);
+  if (parts.length !== 2) {
+    return undefined;
+  }
+  const position = parseTime(parts[0] ?? '');
+  const duration = parseTime(parts[1] ?? '');
+  if (position === undefined || duration === undefined || duration <= 0 || position > duration) {
+    return undefined;
+  }
+  return { position, duration };
+};
+
 const getDisplayedPlayback = (document: Document): PlaybackTime | undefined => {
   const selectors = [
     'ytmusic-player-bar .left-controls span.time-info.ytmusic-player-bar',
     'ytmusic-player-bar .time-info',
+    'ytmusic-player-bar [class*="time-info"]',
   ];
-  for (const selector of selectors) {
-    const value = document.querySelector(selector)?.textContent?.trim() ?? '';
-    const parts = value.split(/\s*\/\s*/);
-    if (parts.length !== 2) {
-      continue;
-    }
-    const position = parseTime(parts[0] ?? '');
-    const duration = parseTime(parts[1] ?? '');
-    if (position !== undefined && duration !== undefined && duration > 0 && position <= duration) {
-      return { position, duration };
-    }
+  const elements = Array.from(
+    new Set(selectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)))),
+  );
+  const candidates = elements
+    .map((element) => ({ element, playback: parseDisplayedPlayback(element.textContent ?? '') }))
+    .filter((candidate): candidate is { element: Element; playback: PlaybackTime } =>
+      Boolean(candidate.playback),
+    )
+    .filter((candidate) => !isHidden(candidate.element));
+  const laidOut = candidates.filter(({ element }) => {
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  });
+  for (const candidate of laidOut.length > 0 ? laidOut : candidates) {
+    return candidate.playback;
   }
   return undefined;
 };

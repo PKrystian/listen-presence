@@ -128,6 +128,32 @@ describe('extractTrackSnapshot', () => {
     expect(snapshot?.duration).toBe(166);
   });
 
+  it('ignores a hidden stale player-bar timer', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar aria-hidden="true">
+        <span class="time-info">3:05 / 3:58</span>
+      </ytmusic-player-bar>
+      <ytmusic-player-bar>
+        <div class="title">Poker Face</div>
+        <div class="left-controls">
+          <span class="time-info ytmusic-player-bar">1:11 / 3:58</span>
+        </div>
+      </ytmusic-player-bar>
+      <video></video>
+    `;
+    const video = document.querySelector('video') as HTMLVideoElement;
+    Object.defineProperties(video, {
+      currentTime: { value: 185 },
+      duration: { value: 238 },
+      paused: { value: false },
+      ended: { value: false },
+    });
+
+    const snapshot = extractTrackSnapshot(document, 'https://music.youtube.com/watch?v=poker123');
+    expect(snapshot?.position).toBe(71);
+    expect(snapshot?.duration).toBe(238);
+  });
+
   it('falls back to the player-bar time while media timing is unavailable', () => {
     document.body.innerHTML = `
       <ytmusic-player-bar>
