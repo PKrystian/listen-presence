@@ -6,7 +6,7 @@ architecture and make the security boundary easy to review.
 ## Prerequisites
 
 - Node.js 22 or newer and npm
-- Go 1.22 or newer for connector changes
+- Go 1.26 or newer for connector changes
 - Chrome, Brave, or Chromium for manual extension testing
 - Discord Desktop for Rich Presence testing
 

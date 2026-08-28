@@ -55,7 +55,7 @@ setup, Developer ID signing and Apple notarization for both macOS connectors, an
 GPG signature for the final checksum manifest. Never publish preliminary unsigned connector
 artifacts as final downloads.
 
-The Go commands require Go 1.22 or newer. If the change affects the popup, content
+The Go commands require Go 1.26 or newer. If the change affects the popup, content
 script, installer, or Discord integration, perform the manual test in
 `docs/RELEASE_CHECKLIST.md` on both Chrome and Brave.
 

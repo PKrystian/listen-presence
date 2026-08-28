@@ -78,7 +78,7 @@ End users need only:
 - Chrome, Brave, or another Chromium browser with Manifest V3 support
 - Discord Desktop running and activity sharing enabled
 
-Node.js 22 or newer, npm, and Go 1.22 or newer are needed only to build from source.
+Node.js 22 or newer, npm, and Go 1.26 or newer are needed only to build from source.
 
 ## Development
 
