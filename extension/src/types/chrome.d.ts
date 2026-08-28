@@ -1,6 +1,6 @@
 declare namespace chrome {
   namespace runtime {
-    type MessageSender = { tab?: { id?: number } };
+    type MessageSender = { tab?: { id?: number; active?: boolean } };
     type Port = {
       onMessage: { addListener(listener: (message: unknown) => void): void };
       onDisconnect: { addListener(listener: () => void): void };

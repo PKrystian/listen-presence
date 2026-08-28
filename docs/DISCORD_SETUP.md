@@ -18,7 +18,7 @@ token.
 ## Configure a release
 
 The maintainer creates one `ListenPresence` Discord application and embeds its public
-Application ID in the self-contained Windows setup. End users do not create an application
+Application ID in every platform's connector package. End users do not create an application
 and do not enter an ID.
 
 For a local source build, pass the Application ID to the developer installer:
@@ -30,7 +30,17 @@ powershell -ExecutionPolicy Bypass -File .\installer\windows\install.ps1 `
   -Browser Both
 ```
 
-The installer writes the non-secret ID to `%LOCALAPPDATA%\ListenPresence\config.json`.
+On macOS or Linux:
+
+```sh
+sh installer/unix/install.sh \
+  --extension-id <extension-id> \
+  --discord-application-id <application-id> \
+  --browser all
+```
+
+The installer writes the non-secret ID to `config.json` in the per-user ListenPresence
+application data directory.
 
 ## Test Rich Presence
 

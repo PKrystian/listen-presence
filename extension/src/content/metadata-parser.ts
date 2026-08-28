@@ -5,7 +5,7 @@ export type MediaSessionMetadataLike = {
   title?: string | null;
   artist?: string | null;
   album?: string | null;
-  artwork?: Array<{ src?: string | null }> | null;
+  artwork?: Array<{ src?: string | null; sizes?: string | null | undefined }> | null;
 };
 
 type MediaElementLike = {
@@ -22,12 +22,17 @@ type PlaybackTime = {
 
 const playbackDurationMismatchSeconds = 2;
 const playbackEndToleranceSeconds = 2;
+const playbackPositionAgreementSeconds = 2;
 
 const text = (root: ParentNode, selectors: string[]): string => {
   for (const selector of selectors) {
-    const value = root.querySelector(selector)?.textContent;
-    if (value?.trim()) {
-      return trimText(value);
+    const elements = Array.from(root.querySelectorAll(selector));
+    const candidates = elements.filter((element) => !isHidden(element));
+    for (const element of candidates.length > 0 ? candidates : elements) {
+      const value = element.textContent;
+      if (value?.trim()) {
+        return trimText(value);
+      }
     }
   }
   return '';
@@ -35,9 +40,13 @@ const text = (root: ParentNode, selectors: string[]): string => {
 
 const attribute = (root: ParentNode, selectors: string[], name: string): string => {
   for (const selector of selectors) {
-    const value = root.querySelector(selector)?.getAttribute(name);
-    if (value?.trim()) {
-      return value.trim();
+    const elements = Array.from(root.querySelectorAll(selector));
+    const candidates = elements.filter((element) => !isHidden(element));
+    for (const element of candidates.length > 0 ? candidates : elements) {
+      const value = element.getAttribute(name);
+      if (value?.trim()) {
+        return value.trim();
+      }
     }
   }
   return '';
@@ -45,10 +54,14 @@ const attribute = (root: ParentNode, selectors: string[], name: string): string 
 
 const backgroundImage = (root: ParentNode, selectors: string[]): string => {
   for (const selector of selectors) {
-    const style = root.querySelector(selector)?.getAttribute('style') ?? '';
-    const match = style.match(/background-image\s*:\s*url\(\s*["']?([^"')]+)["']?\s*\)/i);
-    if (match?.[1]?.trim()) {
-      return match[1].trim();
+    const elements = Array.from(root.querySelectorAll(selector));
+    const candidates = elements.filter((element) => !isHidden(element));
+    for (const element of candidates.length > 0 ? candidates : elements) {
+      const style = element.getAttribute('style') ?? '';
+      const match = style.match(/background-image\s*:\s*url\(\s*["']?([^"')]+)["']?\s*\)/i);
+      if (match?.[1]?.trim()) {
+        return match[1].trim();
+      }
     }
   }
   return '';
@@ -178,12 +191,23 @@ const choosePlayback = (
     ) {
       return mediaPlayback;
     }
+    if (
+      Math.abs(mediaPlayback.position - displayedPlayback.position) <=
+      playbackPositionAgreementSeconds
+    ) {
+      return mediaPlayback;
+    }
   }
 
   return displayedPlayback;
 };
 
 const getTrackUrl = (document: Document, locationHref: string): string => {
+  const videoId = attribute(
+    document,
+    ['ytmusic-player-bar [data-video-id]', 'ytmusic-player-bar[data-video-id]'],
+    'data-video-id',
+  );
   const href = attribute(
     document,
     [
@@ -193,7 +217,9 @@ const getTrackUrl = (document: Document, locationHref: string): string => {
     ],
     'href',
   );
-  const candidate = href || locationHref;
+  const candidate = /^[A-Za-z0-9_-]{1,64}$/.test(videoId)
+    ? `/watch?v=${encodeURIComponent(videoId)}`
+    : href || locationHref;
   try {
     const url = new URL(candidate, locationHref);
     return normalizeTrackUrl(url.toString()) || normalizeTrackUrl(locationHref);
@@ -205,16 +231,27 @@ const getTrackUrl = (document: Document, locationHref: string): string => {
 const getImageUrl = (
   document: Document,
   mediaSessionMetadata?: MediaSessionMetadataLike,
+  preferMediaSession = false,
 ): string => {
-  const image =
+  const mediaSessionImage =
+    mediaSessionMetadata?.artwork
+      ?.filter((item) => item.src?.trim())
+      .sort((left, right) => artworkWidth(right.sizes) - artworkWidth(left.sizes))[0]?.src ?? '';
+  const documentImage =
     attribute(document, ['ytmusic-player-bar img', '#song-image img'], 'src') ||
     backgroundImage(document, [
       'ytmusic-player-bar [style*="background-image"]',
       '#song-image [style*="background-image"]',
-    ]) ||
-    mediaSessionMetadata?.artwork?.[0]?.src ||
-    '';
+    ]);
+  const image = preferMediaSession
+    ? mediaSessionImage || documentImage
+    : documentImage || mediaSessionImage;
   return normalizeImageUrl(image);
+};
+
+const artworkWidth = (sizes?: string | null): number => {
+  const width = Number.parseInt(sizes?.match(/^(\d+)x\d+$/)?.[1] ?? '', 10);
+  return Number.isFinite(width) ? width : 0;
 };
 
 const getTrackId = (trackUrl: string, locationHref: string): string => {
@@ -250,7 +287,7 @@ export const readMediaSessionMetadata = (
     title: metadata.title,
     artist: metadata.artist,
     album: metadata.album,
-    artwork: metadata.artwork?.map((item) => ({ src: item.src })),
+    artwork: metadata.artwork?.map((item) => ({ src: item.src, sizes: item.sizes })),
   };
 };
 
@@ -261,36 +298,42 @@ export const extractTrackSnapshot = (
   playbackState?: MediaSession['playbackState'],
 ): TrackSnapshot | null => {
   const media = getMedia(document);
-  const title = trimText(
-    text(document, [
-      'ytmusic-player-bar .title',
-      '.title.ytmusic-player-bar',
-      '#player-bar-title',
-    ]) ||
-      mediaSessionMetadata?.title ||
-      '',
+  const documentTitle = trimText(
+    text(document, ['ytmusic-player-bar .title', '.title.ytmusic-player-bar', '#player-bar-title']),
   );
+  const mediaSessionTitle = trimText(mediaSessionMetadata?.title ?? '');
+  const title = documentTitle || mediaSessionTitle;
   if (!title) {
     return null;
   }
+
+  const mediaSessionMatches =
+    !documentTitle ||
+    (!!mediaSessionTitle &&
+      mediaSessionTitle.toLocaleLowerCase() === documentTitle.toLocaleLowerCase());
 
   const byline = text(document, ['ytmusic-player-bar .byline', 'ytmusic-player-bar .subtitle']);
   const bylineParts = splitByline(byline);
   const artist = trimText(
     text(document, ['ytmusic-player-bar .byline a:first-child', '[data-testid="player-artist"]']) ||
       bylineParts.artist ||
-      mediaSessionMetadata?.artist ||
+      (mediaSessionMatches ? mediaSessionMetadata?.artist : '') ||
       '',
   );
   const album = trimText(
     text(document, ['ytmusic-player-bar .byline a:last-child', '[data-testid="player-album"]']) ||
       bylineParts.album ||
-      mediaSessionMetadata?.album ||
+      (mediaSessionMatches ? mediaSessionMetadata?.album : '') ||
       '',
   );
   const trackUrl = getTrackUrl(document, locationHref);
   const trackId = getTrackId(trackUrl, locationHref);
-  const imageUrl = getStableThumbnailUrl(trackId) || getImageUrl(document, mediaSessionMetadata);
+  const imageUrl =
+    getImageUrl(
+      document,
+      mediaSessionMatches ? mediaSessionMetadata : undefined,
+      mediaSessionMatches,
+    ) || getStableThumbnailUrl(trackId);
 
   const playback = choosePlayback(getMediaPlayback(media), getDisplayedPlayback(document));
   const position = playback?.position ?? 0;

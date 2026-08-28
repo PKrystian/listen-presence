@@ -73,3 +73,16 @@ HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.listenpresenc
 
 The manifest has `type: stdio`, an absolute executable path, and one exact
 `chrome-extension://<id>/` entry in `allowed_origins`.
+
+On macOS, the per-user manifest is stored under the matching browser directory in
+`~/Library/Application Support`. On Linux, it is stored under the matching directory in
+`${XDG_CONFIG_HOME:-~/.config}`. The installer supports these browser paths:
+
+| Browser  | macOS directory                                    | Linux directory                                    |
+| -------- | -------------------------------------------------- | -------------------------------------------------- |
+| Chrome   | `Google/Chrome/NativeMessagingHosts`               | `google-chrome/NativeMessagingHosts`               |
+| Brave    | `BraveSoftware/Brave-Browser/NativeMessagingHosts` | `BraveSoftware/Brave-Browser/NativeMessagingHosts` |
+| Chromium | `Chromium/NativeMessagingHosts`                    | `chromium/NativeMessagingHosts`                    |
+
+All registrations are per-user. The connector path is absolute and the executable is given
+user execute permission during installation.

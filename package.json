@@ -1,6 +1,6 @@
 {
   "name": "listen-presence",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "YouTube Music Rich Presence for Discord through a local Native Messaging connector.",
@@ -28,10 +28,22 @@
   "scripts": {
     "build": "npm run build:extension",
     "build:extension": "node scripts/build-extension.mjs",
-    "build:native": "go -C native-host build -buildvcs=false -trimpath -ldflags=\"-s -w\" -o ../dist/native-host/listenpresence-connector.exe ./cmd/listenpresence-connector",
+    "build:extension:release": "node scripts/build-extension.mjs --release",
+    "package:extension": "npm run build:extension:release && node scripts/package-extension.mjs",
+    "build:native": "node scripts/build-native.mjs",
+    "build:native:all": "node scripts/build-native.mjs --all",
     "build:all": "npm run build:extension && npm run build:native",
     "build:installer": "node scripts/build-installer.mjs",
-    "build:release": "npm run build:all && npm run build:installer",
+    "build:unix-packages": "node scripts/build-unix-packages.mjs",
+    "build:release:unix": "npm run build:native:all && npm run build:unix-packages",
+    "build:release": "npm run package:extension && npm run build:native && npm run build:installer",
+    "build:release:all": "npm run build:release && npm run build:release:unix && npm run release:checksums",
+    "release:checksums": "node scripts/write-checksums.mjs",
+    "release:sign:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sign-windows-release.ps1",
+    "release:verify:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows-release.ps1",
+    "release:sign:macos": "sh scripts/sign-notarize-macos.sh",
+    "release:sign:checksums": "node scripts/sign-release-checksums.mjs",
+    "version:check": "node scripts/check-version.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -39,7 +51,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "native:test": "go -C native-host test ./...",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build:extension"
+    "verify": "npm run version:check && npm run typecheck && npm run lint && npm run format:check && npm test && npm run build:extension"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.9",

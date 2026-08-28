@@ -7,7 +7,7 @@ architecture and make the security boundary easy to review.
 
 - Node.js 22 or newer and npm
 - Go 1.22 or newer for connector changes
-- Chrome or Brave for manual extension testing
+- Chrome, Brave, or Chromium for manual extension testing
 - Discord Desktop for Rich Presence testing
 
 ## Getting started
@@ -32,12 +32,13 @@ For connector changes also run:
 
 ```powershell
 go -C native-host test ./...
-go -C native-host build -buildvcs=false -trimpath -ldflags="-s -w" -o ../dist/native-host/listenpresence-connector.exe ./cmd/listenpresence-connector
+npm run build:native:all
 ```
 
 Behavior changes require tests for normal, empty, invalid, and failure paths where those
 paths apply. Popup changes require keyboard and narrow-width checks. Integration changes
-require the Chrome and Brave manual acceptance flow.
+require the Chrome, Brave, and Chromium manual acceptance flow on affected operating
+systems.
 
 ## Project conventions
 

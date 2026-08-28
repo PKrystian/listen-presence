@@ -1,6 +1,6 @@
 # ListenPresence - working rules
 
-ListenPresence is an unofficial, open-source Chromium extension and local Windows
+ListenPresence is an unofficial, open-source Chromium extension and local desktop
 connector. It reads playback metadata from YouTube Music and publishes Discord Rich
 Presence through official local RPC/IPC. There is no backend, account system, telemetry,
 Discord user token, or browser automation.
@@ -42,13 +42,18 @@ npm run format:check
 npm test
 npm run build:extension
 go -C native-host test ./...
-go -C native-host build -buildvcs=false -trimpath -ldflags="-s -w" -o ../dist/native-host/listenpresence-connector.exe ./cmd/listenpresence-connector
+npm run build:native:all
 go -C installer/windows test ./...
 ```
 
 Release builds also require `LISTENPRESENCE_EXTENSION_ID` and
 `LISTENPRESENCE_DISCORD_APPLICATION_ID` before `npm run build:release`. These values are
 maintainer configuration; they are not requested from end users.
+
+Public connector releases require Authenticode signatures on the Windows connector and
+setup, Developer ID signing and Apple notarization for both macOS connectors, and a detached
+GPG signature for the final checksum manifest. Never publish preliminary unsigned connector
+artifacts as final downloads.
 
 The Go commands require Go 1.22 or newer. If the change affects the popup, content
 script, installer, or Discord integration, perform the manual test in

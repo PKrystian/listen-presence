@@ -37,3 +37,16 @@ func TestRegistryKeysForBrave(t *testing.T) {
 		t.Fatalf("unexpected Brave key: %s", keys[1])
 	}
 }
+
+func TestRegistryKeysForChromium(t *testing.T) {
+	keys, err := registryKeys("Chromium")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 1 {
+		t.Fatalf("expected one Chromium registry key, got %d", len(keys))
+	}
+	if keys[0] != `HKCU\Software\Chromium\NativeMessagingHosts\com.listenpresence.connector` {
+		t.Fatalf("unexpected Chromium key: %s", keys[0])
+	}
+}

@@ -192,7 +192,7 @@ func (client *Client) handshake(connection io.ReadWriteCloser) error {
 		return err
 	}
 	for {
-		packet, readErr := readPacket(connection)
+		packet, readErr := readRPCPacket(connection)
 		if readErr != nil {
 			return readErr
 		}
@@ -232,7 +232,7 @@ func (client *Client) pingLocked() error {
 		return err
 	}
 	for {
-		packet, err := readPacket(client.connection)
+		packet, err := readRPCPacket(client.connection)
 		if err != nil {
 			return err
 		}
@@ -261,7 +261,7 @@ func (client *Client) sendCommandLocked(command string, args interface{}) error 
 		return err
 	}
 	for {
-		packet, readErr := readPacket(client.connection)
+		packet, readErr := readRPCPacket(client.connection)
 		if readErr != nil {
 			return readErr
 		}
@@ -314,11 +314,39 @@ func writePacket(writer io.Writer, opcode uint32, payload []byte) error {
 	header := make([]byte, 8)
 	binary.LittleEndian.PutUint32(header[0:4], opcode)
 	binary.LittleEndian.PutUint32(header[4:8], uint32(len(payload)))
-	if _, err := writer.Write(header); err != nil {
+	if err := writeAll(writer, header); err != nil {
 		return err
 	}
-	_, err := writer.Write(payload)
-	return err
+	return writeAll(writer, payload)
+}
+
+func writeAll(writer io.Writer, data []byte) error {
+	for len(data) > 0 {
+		written, err := writer.Write(data)
+		if err != nil {
+			return err
+		}
+		if written == 0 {
+			return io.ErrShortWrite
+		}
+		data = data[written:]
+	}
+	return nil
+}
+
+func readRPCPacket(connection io.ReadWriteCloser) (rpcPacket, error) {
+	for {
+		packet, err := readPacket(connection)
+		if err != nil {
+			return rpcPacket{}, err
+		}
+		if packet.Opcode != opcodePing {
+			return packet, nil
+		}
+		if err = writePacket(connection, opcodePong, packet.Payload); err != nil {
+			return rpcPacket{}, err
+		}
+	}
 }
 
 func readPacket(reader io.Reader) (rpcPacket, error) {

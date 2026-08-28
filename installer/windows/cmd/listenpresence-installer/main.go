@@ -92,7 +92,7 @@ func install() error {
 	manifestPath := filepath.Join(installRoot, nativeHostName+".json")
 	configPath := filepath.Join(installRoot, "config.json")
 	if err = writeFileAtomically(connectorPath, connectorAsset, 0o700); err != nil {
-		return fmt.Errorf("could not install the connector. Close Chrome and Brave, then try again: %w", err)
+		return fmt.Errorf("could not install the connector. Close Chrome, Brave, and Chromium, then try again: %w", err)
 	}
 
 	manifest := hostManifest{
@@ -111,7 +111,7 @@ func install() error {
 		return fmt.Errorf("could not write the connector configuration: %w", err)
 	}
 
-	for _, browser := range []string{"Chrome", "Brave"} {
+	for _, browser := range []string{"Chrome", "Brave", "Chromium"} {
 		if err = registerHost(browser, manifestPath); err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ func install() error {
 }
 
 func uninstall() error {
-	for _, browser := range []string{"Chrome", "Brave"} {
+	for _, browser := range []string{"Chrome", "Brave", "Chromium"} {
 		if err := removeHost(browser); err != nil {
 			return err
 		}
@@ -176,6 +176,8 @@ func registryKeys(browser string) ([]string, error) {
 			`HKCU\Software\Google\Chrome\NativeMessagingHosts\` + nativeHostName,
 			`HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\` + nativeHostName,
 		}, nil
+	case "Chromium":
+		return []string{`HKCU\Software\Chromium\NativeMessagingHosts\` + nativeHostName}, nil
 	default:
 		return nil, fmt.Errorf("unsupported browser: %s", browser)
 	}

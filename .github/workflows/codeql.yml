@@ -19,11 +19,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript-typescript]
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: go
+            build-mode: manual
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/autobuild@v3
+          build-mode: ${{ matrix.build-mode }}
+      - uses: actions/setup-go@v5
+        if: matrix.language == 'go'
+        with:
+          go-version: '1.22.x'
+      - run: go -C native-host build ./...
+        if: matrix.language == 'go'
       - uses: github/codeql-action/analyze@v3

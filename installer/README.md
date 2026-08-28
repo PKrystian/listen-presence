@@ -1,10 +1,20 @@
-# ListenPresence Windows installer
+# ListenPresence connector installers
 
 ## Public users
 
-Public releases use `ListenPresence-Setup.exe`. It contains the connector and the project's
-public Discord application ID, registers Native Messaging for Chrome and Brave, and shows
-plain-language completion or error instructions. The user only needs to double-click it.
+Windows releases use `ListenPresence-Setup.exe`. It contains the connector and the project's
+public Discord application ID, registers Native Messaging for Chrome, Brave, and Chromium,
+and shows plain-language completion or error instructions.
+
+macOS releases use notarized ZIP archives. Linux releases use tar.gz archives. Each archive
+contains the connector, `install.sh`, `uninstall.sh`, the published extension ID, and the
+public Discord application ID. `install.sh` registers Chrome, Brave, and Chromium for the
+current user. Release users do not provide either ID.
+
+The Windows connector must be Authenticode-signed before it is embedded in the setup, and
+the final setup must be signed separately. The macOS connector must be signed before its ZIP
+is submitted to Apple's notary service. Linux release integrity is published through a
+detached GPG signature for `SHA256SUMS.txt`.
 
 The setup also accepts `/uninstall` and `--uninstall`.
 
@@ -46,3 +56,23 @@ powershell -ExecutionPolicy Bypass -File .\installer\windows\uninstall.ps1 -Brow
 
 After installation, Chromium launches the connector when the extension calls
 `chrome.runtime.connectNative`. The user does not need to start the connector manually.
+
+## macOS and Linux development fallback
+
+Build the current-platform connector:
+
+```sh
+npm run build:native
+```
+
+Register it for the current user:
+
+```sh
+sh installer/unix/install.sh \
+  --extension-id <32-character-extension-id> \
+  --discord-application-id <discord-application-id> \
+  --browser all
+```
+
+Uninstall it with `sh installer/unix/uninstall.sh --browser all`. The scripts do not use
+administrator access and do not create a service or login startup entry.

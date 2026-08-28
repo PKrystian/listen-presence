@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ListenPresence - YouTube Music Rich Presence",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Shows the current YouTube Music track as Discord Rich Presence through a local connector.",
   "icons": {
     "128": "icons/icon128.png"

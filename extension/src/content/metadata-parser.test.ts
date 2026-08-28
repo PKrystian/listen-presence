@@ -128,6 +128,27 @@ describe('extractTrackSnapshot', () => {
     expect(snapshot?.duration).toBe(166);
   });
 
+  it('uses precise media time when it agrees with the displayed timer', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar>
+        <div class="title">Song</div>
+        <span class="time-info">0:42 / 3:00</span>
+      </ytmusic-player-bar>
+      <video></video>
+    `;
+    const video = document.querySelector('video') as HTMLVideoElement;
+    Object.defineProperties(video, {
+      currentTime: { value: 42.75 },
+      duration: { value: 180 },
+      paused: { value: false },
+      ended: { value: false },
+    });
+
+    const snapshot = extractTrackSnapshot(document, 'https://music.youtube.com/watch?v=time123');
+    expect(snapshot?.position).toBe(42.75);
+    expect(snapshot?.duration).toBe(180);
+  });
+
   it('ignores a hidden stale player-bar timer', () => {
     document.body.innerHTML = `
       <ytmusic-player-bar aria-hidden="true">
@@ -225,8 +246,88 @@ describe('extractTrackSnapshot', () => {
     expect(snapshot?.title).toBe('Media title');
     expect(snapshot?.artist).toBe('Media artist');
     expect(snapshot?.album).toBe('Media album');
-    expect(snapshot?.imageUrl).toBe('https://i.ytimg.com/vi/media123/hqdefault.jpg');
+    expect(snapshot?.imageUrl).toBe('https://lh3.googleusercontent.com/image');
     expect(snapshot?.isPlaying).toBe(false);
+  });
+
+  it('uses matching Media Session album art before a stale player image', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar>
+        <div class="title">New song</div>
+        <div class="byline"><a>New artist</a><span> • </span><a>New album</a></div>
+        <a href="/watch?v=new123"></a>
+        <img src="https://i.ytimg.com/vi/old123/hqdefault.jpg">
+      </ytmusic-player-bar>
+    `;
+
+    const snapshot = extractTrackSnapshot(
+      document,
+      'https://music.youtube.com/watch?v=new123',
+      {
+        title: 'New song',
+        artist: 'New artist',
+        album: 'New album',
+        artwork: [
+          { src: 'https://lh3.googleusercontent.com/new-album-small', sizes: '96x96' },
+          { src: 'https://lh3.googleusercontent.com/new-album', sizes: '512x512' },
+        ],
+      },
+      'playing',
+    );
+
+    expect(snapshot?.imageUrl).toBe('https://lh3.googleusercontent.com/new-album');
+  });
+
+  it('does not mix stale Media Session fields into a new DOM track', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar>
+        <div class="title">New song</div>
+        <div class="byline"><a>New artist</a><span> • </span><a>New album</a></div>
+        <a href="/watch?v=new123"></a>
+        <img src="https://i.ytimg.com/vi/new123/hqdefault.jpg">
+      </ytmusic-player-bar>
+    `;
+
+    const snapshot = extractTrackSnapshot(
+      document,
+      'https://music.youtube.com/watch?v=new123',
+      {
+        title: 'Old song',
+        artist: 'Old artist',
+        album: 'Old album',
+        artwork: [{ src: 'https://lh3.googleusercontent.com/old-album' }],
+      },
+      'playing',
+    );
+
+    expect(snapshot?.title).toBe('New song');
+    expect(snapshot?.artist).toBe('New artist');
+    expect(snapshot?.album).toBe('New album');
+    expect(snapshot?.imageUrl).toBe('https://i.ytimg.com/vi/new123/hqdefault.jpg');
+  });
+
+  it('ignores a hidden stale player bar for track metadata', () => {
+    document.body.innerHTML = `
+      <ytmusic-player-bar aria-hidden="true">
+        <div class="title">Old song</div>
+        <div class="byline"><a>Old artist</a><span> • </span><a>Old album</a></div>
+        <a href="/watch?v=old123"></a>
+        <img src="https://i.ytimg.com/vi/old123/hqdefault.jpg">
+      </ytmusic-player-bar>
+      <ytmusic-player-bar>
+        <div class="title">New song</div>
+        <div class="byline"><a>New artist</a><span> • </span><a>New album</a></div>
+        <a href="/watch?v=new123"></a>
+        <img src="https://i.ytimg.com/vi/new123/hqdefault.jpg">
+      </ytmusic-player-bar>
+    `;
+
+    const snapshot = extractTrackSnapshot(document, 'https://music.youtube.com/watch?v=old123');
+    expect(snapshot?.title).toBe('New song');
+    expect(snapshot?.artist).toBe('New artist');
+    expect(snapshot?.album).toBe('New album');
+    expect(snapshot?.trackId).toBe('new123');
+    expect(snapshot?.imageUrl).toBe('https://i.ytimg.com/vi/new123/hqdefault.jpg');
   });
 
   it('reads an image from a player background style when no thumbnail ID exists', () => {
