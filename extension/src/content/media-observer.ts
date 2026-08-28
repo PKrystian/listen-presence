@@ -38,6 +38,12 @@ export const observePlayback = (listener: SnapshotListener): (() => void) => {
 
   const bindMedia = (): void => {
     const next = Array.from(document.querySelectorAll('video, audio'));
+    if (
+      next.length === mediaElements.length &&
+      next.every((element, index) => element === mediaElements[index])
+    ) {
+      return;
+    }
     for (const element of mediaElements) {
       for (const event of mediaEvents) {
         element.removeEventListener(event, onMediaEvent);
@@ -71,8 +77,18 @@ export const observePlayback = (listener: SnapshotListener): (() => void) => {
   mutationObserver.observe(document.documentElement, {
     childList: true,
     subtree: true,
+    characterData: true,
     attributes: true,
-    attributeFilter: ['src', 'href', 'class', 'aria-label'],
+    attributeFilter: [
+      'src',
+      'srcset',
+      'href',
+      'class',
+      'aria-label',
+      'aria-hidden',
+      'style',
+      'data-video-id',
+    ],
   });
 
   const onRoute = (): void => {
@@ -94,7 +110,7 @@ export const observePlayback = (listener: SnapshotListener): (() => void) => {
     document.addEventListener(event, onRoute);
   }
 
-  const interval = window.setInterval(emit, 1000);
+  const interval = window.setInterval(emit, 500);
   bindMedia();
   emit();
 

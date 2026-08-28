@@ -4,6 +4,7 @@ import { build } from 'esbuild';
 
 const root = resolve(import.meta.dirname, '..');
 const output = resolve(root, 'dist', 'extension');
+const release = process.argv.includes('--release');
 
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
@@ -25,8 +26,8 @@ await build({
   bundle: true,
   format: 'iife',
   outdir: output,
-  sourcemap: true,
-  minify: false,
+  sourcemap: !release,
+  minify: release,
   target: 'es2022',
   logLevel: 'info',
 });

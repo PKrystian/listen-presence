@@ -1,9 +1,9 @@
 # Publishing ListenPresence
 
-Publishing has two separate deliverables: the browser extension package and the Windows
-connector. The Chrome Web Store distributes only the extension. The connector must remain a
-separate download because a store-installed extension cannot silently install a native
-executable or write the Windows registry.
+Publishing has two separate deliverables: the browser extension package and native connector
+packages for Windows, macOS, and Linux. The Chrome Web Store distributes only the extension.
+The connector must remain a separate download because a store-installed extension cannot
+silently install a native executable or register a Native Messaging host.
 
 ## 1. Make the source repository public
 
@@ -13,8 +13,8 @@ executable or write the Windows registry.
    and CodeQL where available.
 4. Set the repository description to explain that the connector is required and local.
 5. Publish `README.md`, `PRIVACY.md`, `SECURITY.md`, `CONTRIBUTING.md`, and the license.
-6. Create a GitHub release for every version and attach the extension ZIP and the
-   self-contained `ListenPresence-Setup.exe` installer.
+6. Create a GitHub release for every version and attach the extension ZIP, the self-contained
+   `ListenPresence-Setup.exe`, and all macOS and Linux connector archives.
 
 Do not put a Discord client secret, token, signing key, or a user's `config.json` in Git.
 
@@ -28,31 +28,91 @@ npm run verify
 go -C native-host test ./...
 $env:LISTENPRESENCE_EXTENSION_ID = '<published-extension-id>'
 $env:LISTENPRESENCE_DISCORD_APPLICATION_ID = '<public-listenpresence-application-id>'
-npm run build:release
-New-Item -ItemType Directory -Force dist\release | Out-Null
-Compress-Archive -Path dist\extension\* -DestinationPath dist\release\listenpresence-extension-v0.1.0.zip -Force
+npm run build:release:all
 ```
 
-The build embeds the connector, published extension ID, and public Discord application ID
-in `dist\release\ListenPresence-Setup.exe`. End users double-click that file and do not
-provide any IDs.
+The build writes `listenpresence-extension-v1.0.0.zip`, `ListenPresence-Setup.exe`, two
+macOS ZIPs, two Linux tar.gz archives, and `SHA256SUMS.txt` under `dist/release`. It embeds
+the published extension ID and public Discord application ID in connector installers. End
+users do not provide any IDs. The Chrome Web Store ZIP contains only the extension and has
+`manifest.json` at its root.
 
 Record the Go version, Node version, commit, and SHA-256 checksums in the GitHub release.
-For a public Windows download, Authenticode-signing `ListenPresence-Setup.exe` is recommended
-to reduce SmartScreen warnings. Signing is an owner responsibility and the private signing
-key must never enter the repository or CI logs.
+
+### Windows signing
+
+Obtain an OV code-signing certificate, Microsoft Artifact Signing identity, or approved
+open-source signing service. The included script supports a certificate installed in the
+current user's Personal certificate store and requires SignTool from the Windows SDK:
+
+```powershell
+npm run build:release:all
+npm run release:sign:windows -- -CertificateThumbprint <40-character-thumbprint>
+npm run release:verify:windows
+```
+
+The signing script uses SHA-256 and an RFC 3161 timestamp, signs the connector, rebuilds the
+setup around that signed connector, then signs and verifies the setup. Rerun checksums after
+every signature because signing changes the file bytes. Use the same trusted publisher
+identity for every version. A self-signed certificate is not appropriate for public users.
+Authenticode improves publisher trust, but a new signed publisher can still receive an
+initial SmartScreen reputation warning. Microsoft Store distribution is the only supported
+path that consistently avoids SmartScreen download warnings.
+
+Remote signing services must preserve the same order: sign the connector, embed it by
+rebuilding the setup, then sign the setup. If Microsoft Defender classifies a signed release
+as malware rather than merely showing a SmartScreen reputation prompt, submit that exact
+file to [Microsoft Security Intelligence](https://www.microsoft.com/wdsi/filesubmission) as
+a software developer and wait for the verdict.
+
+### macOS signing and notarization
+
+Run the final macOS build on macOS with an Apple Developer Program membership, a Developer
+ID Application certificate in the keychain, and a `notarytool` keychain profile:
+
+```sh
+xcrun notarytool store-credentials 'listenpresence-notary' \
+  --apple-id '<apple-id>' \
+  --team-id '<team-id>' \
+  --password '<app-specific-password>'
+export LISTENPRESENCE_APPLE_SIGNING_IDENTITY='Developer ID Application: Publisher (TEAMID)'
+export LISTENPRESENCE_APPLE_NOTARY_PROFILE='listenpresence-notary'
+npm run build:native:all
+npm run release:sign:macos
+```
+
+The command signs both Mach-O connectors with hardened runtime and a secure timestamp,
+creates the final macOS ZIPs, submits them with `notarytool --wait`, and checks them with
+`codesign` and Gatekeeper. ZIP notarization tickets are available to Gatekeeper online and
+cannot be stapled to the ZIP itself. Never publish the preliminary unsigned macOS ZIPs made
+by a cross-platform build as final downloads.
+
+### Release manifest signing
+
+After all platform signatures and packages are final, recreate and sign the checksum list:
+
+```powershell
+npm run release:checksums
+$env:LISTENPRESENCE_GPG_KEY_ID = '<16-to-40-character-key-id>'
+npm run release:sign:checksums
+```
+
+Upload `SHA256SUMS.txt` and `SHA256SUMS.txt.asc`, and publish the signing key fingerprint in
+the release notes and repository. The private Windows, Apple, and GPG signing keys must never
+enter the repository or CI logs.
 
 ## 3. Publish to the Chrome Web Store
 
 1. Register a Chrome Web Store developer account in the [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole).
    Google currently requires developer registration, a one-time registration fee, and
    two-step verification before publishing.
-2. Upload only `listenpresence-extension-v0.1.0.zip`. Do not include the connector binary
+2. Upload only `listenpresence-extension-v1.0.0.zip`. Do not include the connector binary
    in the extension package.
 3. Fill in the Store Listing with the exact single purpose: `Shows the currently playing
 YouTube Music track in Discord Rich Presence through a user-installed local connector.`
-4. Explain in the first lines that Discord Desktop and the separate Windows connector are
-   required. Never imply that the extension alone installs the connector.
+4. Explain in the first lines that Discord Desktop and the separate connector for the user's
+   operating system are required. Never imply that the extension alone installs the
+   connector.
 5. Use screenshots that show the popup, the connector status, and the Discord activity.
 6. In Privacy practices, declare the data read from YouTube Music and the local transfer to
    the connector and Discord Desktop. Local-only processing still needs disclosure.
@@ -65,8 +125,8 @@ YouTube Music track in Discord Rich Presence through a user-installed local conn
     URL or a GitHub Pages copy.
 11. Set Distribution visibility to `Public` when the reviewer-ready release is complete.
     Use `Private` or `Unlisted` for initial testing if desired.
-12. Add test instructions that mention Windows, Chrome, Discord Desktop, a YouTube Music
-    track, and the one-click connector installer. Do not ask end users to provide an
+12. Add test instructions that mention supported operating systems, Chrome, Discord Desktop,
+    a YouTube Music track, and the connector installer. Do not ask end users to provide an
     extension ID or Discord application ID.
 13. Submit for review and wait for the review result. If approved, publish immediately or
     use deferred publishing.

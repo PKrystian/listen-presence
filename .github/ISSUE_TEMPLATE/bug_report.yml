@@ -11,13 +11,13 @@ body:
     id: browser
     attributes:
       label: Browser and version
-      placeholder: Chrome 000 or Brave 000
+      placeholder: Chrome 000, Brave 000, or Chromium 000
     validations:
       required: true
   - type: input
-    id: windows
+    id: operating_system
     attributes:
-      label: Windows version
+      label: Operating system and version
     validations:
       required: true
   - type: input

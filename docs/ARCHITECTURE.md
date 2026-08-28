@@ -12,14 +12,16 @@ YouTube Music tab
   -> MV3 service worker
   -> chrome.runtime.connectNative
   -> Go Native Messaging host
-  -> Discord IPC named pipe
+  -> Discord local IPC
   -> Discord Desktop Rich Presence
 ```
 
-The content script sends a snapshot only when track identity, playback state, seek
-position, duration, or image changes. The service worker builds a Listening activity and
-deduplicates identical payloads. Timestamps let Discord render progress without a request
-every second.
+The content script sends a snapshot when track identity, playback state, seek position,
+duration, or image changes. During a track transition it waits up to 1.2 seconds for the
+title, URL, and image sources to agree, preventing mixed old and new metadata. The service
+worker tracks each YouTube Music tab, keeps a playing tab selected when another tab is
+paused, and prefers an active playing tab. It builds a Listening activity and deduplicates
+identical payloads. Timestamps let Discord render progress continuously between updates.
 
 ## Extension
 
@@ -51,13 +53,16 @@ The connector accepts four requests:
 | `get_status`     | Local status and an IPC probe                      |
 
 The host tries `discord-ipc-0` through `discord-ipc-9`, performs the RPC handshake, and
-reconnects when Discord Desktop restarts. It stores the last activity in memory only so it
-can restore it after a reconnect. When Chromium closes the Native Messaging pipe, the host
-clears the activity and exits.
+reconnects when Discord Desktop restarts. Windows uses named pipes. macOS and Linux use the
+Discord Unix socket search order based on `XDG_RUNTIME_DIR`, `TMPDIR`, `TMP`, `TEMP`, and
+`/tmp`, with the Flatpak Discord socket as a compatibility candidate. It stores the last
+activity in memory only so it can restore it after a reconnect. When Chromium closes the
+Native Messaging pipe, the host clears the activity and exits.
 
 ## Installation boundary
 
 The Windows installer copies the executable to the current user's local application data
-directory and registers the manifest in `HKCU`. Brave receives both the Chromium-compatible
-Chrome registry key and a Brave-specific compatibility key. The registry manifest contains
-the exact extension origin. No service, scheduled task, or Windows startup entry is created.
+directory and registers Chrome, Brave, and Chromium manifests in `HKCU`. The macOS and Linux installer copies the
+connector to the current user's application data directory and writes browser-specific
+Native Messaging manifests under the user's browser configuration. Every manifest contains
+the exact extension origin. No service, scheduled task, or startup entry is created.

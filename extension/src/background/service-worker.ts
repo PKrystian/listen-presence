@@ -1,4 +1,5 @@
 import { NativeClient } from './native-client';
+import { PlaybackRegistry } from './playback-registry';
 import { getSharingEnabled, setSharingEnabled } from './state';
 import { buildPresenceActivity } from '../shared/presence';
 import {
@@ -8,8 +9,12 @@ import {
   type PopupStatus,
   type TrackSnapshot,
 } from '../shared/protocol';
+import { isValidTrackSnapshot } from '../shared/validation';
 
 const nativeClient = new NativeClient();
+const playbackRegistry = new PlaybackRegistry();
+let lastSelectedSnapshot: TrackSnapshot | null | undefined;
+let selectionRevision = 0;
 
 const toPopupStatus = (sharingEnabled: boolean): PopupStatus => {
   const state = nativeClient.getState();
@@ -26,7 +31,7 @@ const toPopupStatus = (sharingEnabled: boolean): PopupStatus => {
 };
 
 const refreshContentScripts = async (): Promise<void> => {
-  const tabs = await chrome.tabs.query({});
+  const tabs = await chrome.tabs.query({ url: 'https://music.youtube.com/*' });
   await Promise.all(
     tabs.flatMap((tab) => {
       if (tab.id === undefined) {
@@ -37,8 +42,14 @@ const refreshContentScripts = async (): Promise<void> => {
   );
 };
 
-const updateActivity = async (snapshot: TrackSnapshot | null): Promise<void> => {
+const updateActivity = async (
+  snapshot: TrackSnapshot | null,
+  isCurrent: () => boolean = () => true,
+): Promise<void> => {
   const sharingEnabled = await getSharingEnabled();
+  if (!isCurrent()) {
+    return;
+  }
   if (!sharingEnabled || !snapshot?.isPlaying) {
     await nativeClient.clearActivity();
     return;
@@ -51,12 +62,36 @@ const updateActivity = async (snapshot: TrackSnapshot | null): Promise<void> => 
   await nativeClient.setActivity(activity);
 };
 
-const handleMessage = async (message: ExtensionMessage): Promise<ExtensionResponse> => {
+const applySelectedActivity = async (snapshot: TrackSnapshot | null): Promise<void> => {
+  if (snapshot === lastSelectedSnapshot) {
+    return;
+  }
+  lastSelectedSnapshot = snapshot;
+  const revision = ++selectionRevision;
+  await updateActivity(snapshot, () => revision === selectionRevision);
+};
+
+const handleMessage = async (
+  message: ExtensionMessage,
+  sender: chrome.runtime.MessageSender,
+): Promise<ExtensionResponse> => {
   if (message.type === 'track_update') {
-    await updateActivity(message.snapshot);
+    if (message.snapshot !== null && !isValidTrackSnapshot(message.snapshot)) {
+      return { ok: false, error: 'Invalid track snapshot.' };
+    }
+    if (sender.tab?.id === undefined) {
+      return { ok: false, error: 'Track update has no source tab.' };
+    }
+    const current = playbackRegistry.update(
+      sender.tab.id,
+      message.snapshot,
+      sender.tab.active && message.snapshot?.isPlaying === true,
+    );
+    await applySelectedActivity(current);
     return { ok: true };
   }
   if (message.type === 'set_sharing') {
+    selectionRevision += 1;
     await setSharingEnabled(message.enabled);
     if (!message.enabled) {
       await nativeClient.clearActivity();
@@ -82,8 +117,18 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 });
 
-chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
-  handleMessage(message as ExtensionMessage)
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void applySelectedActivity(playbackRegistry.remove(tabId));
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === 'loading') {
+    void applySelectedActivity(playbackRegistry.remove(tabId));
+  }
+});
+
+chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+  handleMessage(message as ExtensionMessage, sender)
     .then(sendResponse)
     .catch((error: unknown) =>
       sendResponse({

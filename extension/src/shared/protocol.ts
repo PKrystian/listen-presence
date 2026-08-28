@@ -1,8 +1,7 @@
 export const HOST_NAME = 'com.listenpresence.connector';
 export const PROTOCOL_VERSION = 1;
 export const MAX_TEXT_LENGTH = 128;
-export const INSTALL_URL =
-  'https://github.com/PKrystian/listen-presence/releases/latest/download/ListenPresence-Setup.exe';
+export const INSTALL_URL = 'https://github.com/PKrystian/listen-presence/releases/latest';
 
 export type PresenceActivity = {
   type: 2;
