@@ -35,6 +35,35 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-      - run: go -C native-host build ./...
+      - name: Clean Go build cache
+        run: go clean -cache
+        if: matrix.language == 'go'
+      - name: Build native host for CodeQL
+        working-directory: native-host
+        run: go build ./...
+        if: matrix.language == 'go'
+      - name: Build Windows native host for CodeQL
+        working-directory: native-host
+        run: go build ./...
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+        if: matrix.language == 'go'
+      - name: Build macOS native host for CodeQL
+        working-directory: native-host
+        run: go build ./...
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: '0'
+        if: matrix.language == 'go'
+      - name: Build Windows installer for CodeQL
+        working-directory: installer/windows
+        run: go build ./...
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
         if: matrix.language == 'go'
       - uses: github/codeql-action/analyze@v4
